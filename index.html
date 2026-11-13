@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f5f6f9">
+  <title>Практична робота №4 — Fullsize клавіатура</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f6f9;
+      --ink: #252b3a;
+      --muted: #747e90;
+      --accent: #6477dc;
+      --body: #b2b4b8;
+      --key-face: #fff;
+      --line: #96999f;
+      --gap: 5px;
+      --key-height: 51px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at 50% 0, #fff 0, #f5f6f9 63%);
+      color: var(--ink);
+      font-family: "Manrope", Arial, sans-serif;
+    }
+    .container { max-width: 1400px; margin: 0 auto; padding: 52px 32px 66px; }
+    .eyebrow { color: #657ad6; font-size: 12px; letter-spacing: .17em; font-weight: 800; text-transform: uppercase; margin: 0 0 12px; }
+    h1 { font-size: clamp(30px, 4vw, 49px); letter-spacing: -.045em; line-height: 1.12; margin: 0 0 13px; }
+    .intro { color: #535e70; font-size: 15px; margin: 0; line-height: 1.65; }
+    .requirements {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: start;
+      margin: 29px 0 26px;
+      padding: 22px 26px;
+      border: 1px solid #e6e9f1;
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 8px 25px rgba(41, 48, 66, .035);
+    }
+    .requirements h2 { font-size: 15px; margin: 0 0 10px; }
+    .requirements ol { padding-left: 21px; margin: 0; color: #566073; line-height: 1.9; font-size: 14px; }
+    .requirements li::marker { color: #657ad6; font-weight: 800; }
+    .pill { font-size: 12px; color: #6073b8; background: #edf0fe; padding: 9px 12px; font-weight: 800; border-radius: 100px; white-space: nowrap; }
+    .demo-heading { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin: 0 0 15px; }
+    .demo-heading h2 { margin: 0; font-size: 20px; letter-spacing: -.02em; }
+    .demo-heading p { margin: 4px 0 0; color: #7a8394; font-size: 13px; }
+    .status { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .status-item { display: flex; gap: 9px; align-items: center; border: 1px solid #e2e6f0; border-radius: 11px; background: #fff; padding: 10px 13px; color: #7a8394; font-size: 12px; }
+    .status-item strong { color: #384458; font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    .scroll-hint { display: none; margin: 0 0 9px; color: #858fa0; font-size: 12px; }
+    .keyboard-scroll { overflow-x: auto; padding: 6px 5px 20px; scrollbar-color: #bdc3d2 transparent; }
+    .keyboard {
+      --pad: 20px;
+      min-width: 1200px;
+      padding: 21px var(--pad) 23px;
+      border-radius: 24px;
+      background: linear-gradient(145deg, #bfc1c5 0%, #a4a7ae 60%, #999ca4 100%);
+      border: 2px solid #848990;
+      box-shadow:
+        0 4px 0 #797d85,
+        0 13px 22px rgba(38,45,62,.14),
+        inset 0 2px 3px rgba(255,255,255,.6),
+        inset 0 -3px 5px rgba(70,76,87,.2);
+    }
+    .top,
+    .lower {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 168px 214px;
+      gap: 18px;
+    }
+    .top { align-items: center; margin-bottom: 18px; }
+    .function-grid {
+      display: grid;
+      grid-template-columns: repeat(15, minmax(0, 1fr));
+      gap: var(--gap);
+    }
+    .function-grid .key { height: 36px; min-height: 36px; }
+    .system-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: var(--gap); }
+    .system-grid .key { height: 36px; min-height: 36px; }
+    .main-grid, .navigation-grid, .numpad-grid {
+      display: grid;
+      gap: var(--gap);
+      grid-auto-rows: var(--key-height);
+    }
+    .main-grid { grid-template-columns: repeat(15, minmax(0,1fr)); }
+    .navigation-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .numpad-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
+    .leds { height: 36px; display: flex; align-items: center; justify-content: center; gap: 22px; }
+    .led-group { display: flex; align-items: center; flex-direction: column; gap: 4px; font: 10px "IBM Plex Mono", monospace; color: #42474e; }
+    .led { width: 7px; height: 7px; border-radius: 50%; background: #6f747b; box-shadow: inset 0 1px 2px #41444a; transition: background .18s, box-shadow .18s; }
+    .led.on { background: #a3f5ae; box-shadow: 0 0 8px rgba(113,255,134,.95), inset 0 0 1px #237d38; }
+    .key {
+      min-width: 0;
+      height: 100%;
+      border-radius: 5px;
+      border: 1px solid #7b8189;
+      border-bottom: 3px solid #7e838c;
+      background: linear-gradient(165deg, #fff 0%, #f7f8fa 70%, #e8ebee 100%);
+      box-shadow: 0 2px 0 rgba(47,52,59,.45), inset 0 1px 0 #fff, 0 0 0 1px rgba(255,255,255,.25);
+      color: #252b32;
+      cursor: pointer;
+      font-family: "IBM Plex Mono", monospace;
+      font-weight: 600;
+      font-size: 12px;
+      padding: 4px 3px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      transition: transform .09s ease, background .12s ease, box-shadow .09s ease, border-color .09s ease;
+    }
+    .key:hover { background: linear-gradient(160deg,#fff 0%,#e8eafd 100%); border-color: #697fd4; box-shadow: 0 3px 7px rgba(38,45,65,.22), inset 0 1px 0 #fff; }
+    .key:active, .key.is-pressed {
+      transform: translateY(2px);
+      border-bottom-width: 1px;
+      border-color: #576ecc;
+      background: linear-gradient(#d7e0ff,#b7c5fe);
+      box-shadow: inset 0 2px 5px rgba(45,56,120,.2), 0 0 0 1px rgba(76,102,211,.28);
+    }
+    .key.is-latched { background: linear-gradient(#d5e0ff,#c7d1ff); border-color: #586cc8; box-shadow: 0 0 0 1px #8799eb, inset 0 2px 4px rgba(59,78,174,.15); }
+    .key.is-disabled { background: #e9eaed; color: #9398a2; }
+    .key:focus-visible { outline: 3px solid #596edf; outline-offset: 2px; z-index: 2; }
+    .key-sub { font-size: 9px; line-height: 1; color: #6e7682; }
+    .key-label { text-align: center; line-height: 1.14; overflow-wrap: anywhere; }
+    .key.small { font-size: 9px; }
+    .key.space { font-size: 9px; }
+    .key.wide .key-label { font-size: 10px; }
+    .key.ghost { pointer-events: none; visibility: hidden; }
+    .hint { margin: 9px 3px 0; color: #777f90; text-align: center; font-size: 13px; }
+    footer { margin-top: 40px; text-align: center; color: #a1a7b5; font: 11px "IBM Plex Mono",monospace; }
+    @media (max-width: 900px) {
+      .container { padding: 26px 17px 42px; }
+      .requirements { grid-template-columns: 1fr; padding: 18px; margin-top: 24px; }
+      .requirements .pill { justify-self: start; }
+      .demo-heading { align-items: start; flex-direction: column; }
+      .scroll-hint { display: block; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: .01ms !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <p class="eyebrow">Веброзробка · HTML / CSS / JavaScript</p>
+    <h1>Практична робота №4</h1>
+    <p class="intro">Використовуючи шаблон, розробити вебсторінку у вигляді повнорозмірної клавіатури.</p>
+
+    <section class="requirements" aria-labelledby="req-title">
+      <div>
+        <h2 id="req-title">Вимоги до роботи</h2>
+        <ol>
+          <li>Розмітка сторінки створена за допомогою CSS Grid.</li>
+          <li>Підібрані кастомні шрифти Manrope та IBM Plex Mono.</li>
+          <li>Додані тіні для стилізації клавіш.</li>
+          <li>Кнопки мають різні стилі залежно від стану.</li>
+        </ol>
+      </div>
+      <span class="pill">Усі 4 вимоги виконано ✓</span>
+    </section>
+
+    <section aria-labelledby="keyboard-title">
+      <div class="demo-heading">
+        <div>
+          <h2 id="keyboard-title">Інтерактивна fullsize клавіатура</h2>
+          <p>Натискай клавіші мишкою або на фізичній клавіатурі.</p>
+        </div>
+        <div class="status" aria-live="polite" aria-atomic="true">
+          <div class="status-item"><span>Остання клавіша</span><strong id="last-key">—</strong></div>
+          <div class="status-item"><span>Натискань</span><strong id="press-count">0</strong></div>
+        </div>
+      </div>
+      <p class="scroll-hint">← Прокрутіть убік, щоб побачити всю клавіатуру →</p>
+      <div class="keyboard-scroll">
+        <div class="keyboard" role="group" aria-label="Повнорозмірна віртуальна клавіатура">
+          <div class="top">
+            <div class="function-grid" id="function-grid"></div>
+            <div class="system-grid" id="system-grid"></div>
+            <div class="leds">
+              <div class="led-group"><span class="led" id="led-num"></span><span>Num</span></div>
+              <div class="led-group"><span class="led" id="led-caps"></span><span>Caps</span></div>
+              <div class="led-group"><span class="led" id="led-scroll"></span><span>Scroll</span></div>
+            </div>
+          </div>
+          <div class="lower">
+            <div class="main-grid" id="main-grid"></div>
+            <div class="navigation-grid" id="navigation-grid"></div>
+            <div class="numpad-grid" id="numpad-grid"></div>
+          </div>
+        </div>
+      </div>
+      <p class="hint">Caps Lock, Num Lock і Scroll Lock змінюють свій стан та індикатори. Інші клавіші підсвічуються при натисканні.</p>
+    </section>
+    <footer>ПРАКТИЧНА РОБОТА 04 · CSS GRID · FULLSIZE KEYBOARD</footer>
+  </main>
+  <script>
+    "use strict";
+    const k = (code, label, sub = "", span = 1, extra = {}) => ({ code, label, sub, span, ...extra });
+    const mainRows = [
+      [
+        k("Backquote", "\u0060", "~"),
+        k("Digit1","1","!"),k("Digit2","2","@"),k("Digit3","3","#"),k("Digit4","4","$"),
+        k("Digit5","5","%"),k("Digit6","6","^"),k("Digit7","7","&"),k("Digit8","8","*"),
+        k("Digit9","9","("),k("Digit0","0",")"),k("Minus","-","_"),k("Equal","=","+"),
+        k("Backspace","Backspace","",2)
+      ],
+      [
+        k("Tab","Tab","",2),k("KeyQ","Q"),k("KeyW","W"),k("KeyE","E"),
+        k("KeyR","R"),k("KeyT","T"),k("KeyY","Y"),k("KeyU","U"),
+        k("KeyI","I"),k("KeyO","O"),k("KeyP","P"),
+        k("BracketLeft","[","{"),k("BracketRight","]","}"),k("Backslash","\\","|")
+      ],
+      [
+        k("CapsLock","Caps Lock","",2),k("KeyA","A"),k("KeyS","S"),k("KeyD","D"),
+        k("KeyF","F"),k("KeyG","G"),k("KeyH","H"),k("KeyJ","J"),
+        k("KeyK","K"),k("KeyL","L"),k("Semicolon",";",":"),
+        k("Quote","'","\""),k("Enter","Enter","",2)
+      ],
+      [
+        k("ShiftLeft","Shift","",2),k("KeyZ","Z"),k("KeyX","X"),k("KeyC","C"),
+        k("KeyV","V"),k("KeyB","B"),k("KeyN","N"),k("KeyM","M"),
+        k("Comma",",","<"),k("Period",".",">"),k("Slash","/","?"),
+        k("ShiftRight","Shift","",3)
+      ],
+      [
+        k("ControlLeft","Ctrl","",2),k("MetaLeft","Win"),k("AltLeft","Alt"),
+        k("Space","Пробіл","",6,{space:true}),k("AltRight","Alt"),
+        k("Fn","Fn"),k("ContextMenu","Menu"),k("ControlRight","Ctrl","",2)
+      ]
+    ];
+    const fKeys = [
+      k("Escape","Esc","",1,{column:1}),
+      ...Array.from({length:4},(_,i)=>k("F"+(i+1),"F"+(i+1),"",1,{column:3+i})),
+      ...Array.from({length:4},(_,i)=>k("F"+(i+5),"F"+(i+5),"",1,{column:8+i})),
+      ...Array.from({length:4},(_,i)=>k("F"+(i+9),"F"+(i+9),"",1,{column:12+i}))
+    ];
+    const systemKeys = [k("PrintScreen","PrtSc"),k("ScrollLock","ScrLk"),k("Pause","Pause")];
+    const navigation = [
+      k("Insert","Insert","",1,{row:1,col:1}), k("Home","Home","",1,{row:1,col:2}), k("PageUp","PgUp","",1,{row:1,col:3}),
+      k("Delete","Delete","",1,{row:2,col:1}), k("End","End","",1,{row:2,col:2}), k("PageDown","PgDn","",1,{row:2,col:3}),
+      k("ArrowUp","↑","",1,{row:4,col:2}),
+      k("ArrowLeft","←","",1,{row:5,col:1}),k("ArrowDown","↓","",1,{row:5,col:2}),k("ArrowRight","→","",1,{row:5,col:3})
+    ];
+    const numpad = [
+      k("NumLock","Num Lock","",1,{row:1,col:1}),k("NumpadDivide","/","",1,{row:1,col:2}),
+      k("NumpadMultiply","*","",1,{row:1,col:3}),k("NumpadSubtract","−","",1,{row:1,col:4}),
+      k("Numpad7","7","Home",1,{row:2,col:1}),k("Numpad8","8","↑",1,{row:2,col:2}),
+      k("Numpad9","9","PgUp",1,{row:2,col:3}),k("NumpadAdd","+","",1,{row:2,col:4,rowSpan:2}),
+      k("Numpad4","4","←",1,{row:3,col:1}),k("Numpad5","5","",1,{row:3,col:2}),
+      k("Numpad6","6","→",1,{row:3,col:3}),
+      k("Numpad1","1","End",1,{row:4,col:1}),k("Numpad2","2","↓",1,{row:4,col:2}),
+      k("Numpad3","3","PgDn",1,{row:4,col:3}),k("NumpadEnter","Enter","",1,{row:4,col:4,rowSpan:2}),
+      k("Numpad0","0","Ins",2,{row:5,col:1}),k("NumpadDecimal",".","Del",1,{row:5,col:3})
+    ];
+    const allButtons = new Map();
+    function makeButton(data) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "key";
+      b.dataset.code = data.code;
+      b.setAttribute("aria-label", data.code === "Space" ? "Пробіл" : data.label);
+      if (data.span > 1) { b.style.gridColumn = "span " + data.span; b.classList.add("wide"); }
+      if (data.column) b.style.gridColumnStart = data.column;
+      if (data.row) b.style.gridRow = data.row + (data.rowSpan ? " / span " + data.rowSpan : "");
+      if (data.col) b.style.gridColumn = data.col + (data.span > 1 ? " / span " + data.span : "");
+      if (data.label.length > 4) b.classList.add("small");
+      if (data.space) b.classList.add("space");
+      if (data.sub) {
+        const sub = document.createElement("span");
+        sub.className = "key-sub";
+        sub.textContent = data.sub;
+        b.appendChild(sub);
+      }
+      const label = document.createElement("span");
+      label.className = "key-label";
+      label.textContent = data.label;
+      b.appendChild(label);
+      b.addEventListener("click", () => activate(data.code, data.label));
+      b.addEventListener("pointerdown", () => b.classList.add("is-pressed"));
+      ["pointerup","pointercancel","pointerleave","blur"].forEach(eventName =>
+        b.addEventListener(eventName, () => b.classList.remove("is-pressed"))
+      );
+      allButtons.set(data.code, b);
+      return b;
+    }
+    function addKeys(elementId, keys) {
+      const container = document.getElementById(elementId);
+      keys.forEach(item => container.appendChild(makeButton(item)));
+    }
+    addKeys("function-grid", fKeys);
+    addKeys("system-grid", systemKeys);
+    mainRows.forEach(row => addKeys("main-grid", row));
+    addKeys("navigation-grid", navigation);
+    addKeys("numpad-grid", numpad);
+
+    const locked = { CapsLock: false, NumLock: true, ScrollLock: false };
+    let pressCount = 0;
+    function updateIndicators() {
+      [["NumLock","num"],["CapsLock","caps"],["ScrollLock","scroll"]].forEach(([code,id]) => {
+        document.getElementById("led-"+id).classList.toggle("on", locked[code]);
+        const b = allButtons.get(code);
+        if (b) { b.classList.toggle("is-latched", locked[code]); b.setAttribute("aria-pressed", String(locked[code])); }
+      });
+      numpad.forEach(item => {
+        if (["NumLock","NumpadDivide","NumpadMultiply","NumpadSubtract","NumpadAdd","NumpadEnter"].includes(item.code)) return;
+        const b = allButtons.get(item.code);
+        if (b) b.classList.toggle("is-disabled", !locked.NumLock);
+      });
+    }
+    function activate(code, explicitLabel) {
+      if (Object.hasOwn(locked, code)) { locked[code] = !locked[code]; updateIndicators(); }
+      pressCount++;
+      document.getElementById("press-count").textContent = pressCount;
+      const node = allButtons.get(code);
+      document.getElementById("last-key").textContent = explicitLabel || (node ? node.querySelector(".key-label").textContent : code);
+    }
+    function resolveCode(e) {
+      if (e.code === "OSLeft") return "MetaLeft";
+      if (e.code === "OSRight") return "MetaRight";
+      return e.code;
+    }
+    window.addEventListener("keydown", e => {
+      if (e.repeat) return;
+      const code = resolveCode(e);
+      const b = allButtons.get(code);
+      if (!b) return;
+      if ((code === "Space" || code.startsWith("Arrow")) && !(e.ctrlKey || e.metaKey || e.altKey)) e.preventDefault();
+      b.classList.add("is-pressed");
+      activate(code, b.querySelector(".key-label").textContent);
+    });
+    window.addEventListener("keyup", e => {
+      const b = allButtons.get(resolveCode(e));
+      if (b) b.classList.remove("is-pressed");
+    });
+    window.addEventListener("blur", () => allButtons.forEach(b => b.classList.remove("is-pressed")));
+    updateIndicators();
+  </script>
+</body>
+</html>
